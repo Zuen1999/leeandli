@@ -108,184 +108,235 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 <div class="toast" id="toast"></div>
 
 <script>
-// =============================================
-// 📚 書單 — 在這裡新增/修改書籍
-// price: 定價（0 = 顯示「現場定價」）
-// stock: 庫存數量
-// =============================================
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// =====================
+// Firebase 設定（你給的已放好）
+// =====================
+const firebaseConfig = {
+  apiKey: "AIzaSyDegjtEiG9Sp76gAf-FsXFGie5cP3q9HPg",
+  authDomain: "book-sale-78900.firebaseapp.com",
+  projectId: "book-sale-78900",
+  storageBucket: "book-sale-78900.firebasestorage.app",
+  messagingSenderId: "488413671265",
+  appId: "1:488413671265:web:2f9994cfc50e98266f9f20",
+  measurementId: "G-42DYQZ2QH8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// =====================
+// 預設書單（第一次自動建立用）
+// =====================
 const BOOKS_DATA = [
-  {id:1,  title:"逆境翻身：用心理韌性打造贏家心態", price:0, stock:3},
-  {id:2,  title:"書名二", price:0, stock:3},
-  {id:3,  title:"書名三", price:0, stock:3},
-  {id:4,  title:"書名四", price:0, stock:3},
-  {id:5,  title:"書名五", price:0, stock:3},
-  {id:6,  title:"書名六", price:0, stock:3},
+  {id:"1", title:"逆境翻身：用心理韌性打造贏家心態", price:0, stock:3},
+  {id:"2", title:"書名二", price:0, stock:3},
+  {id:"3", title:"書名三", price:0, stock:3},
+  {id:"4", title:"書名四", price:0, stock:3},
+  {id:"5", title:"書名五", price:0, stock:3},
+  {id:"6", title:"書名六", price:0, stock:3},
 ];
 
-// 後台密碼（可自行修改）
-const ADMIN_PASSWORD = "sale2025";
-// =============================================
-
-let books = JSON.parse(localStorage.getItem('bs_books')||'null') 
-            || JSON.parse(JSON.stringify(BOOKS_DATA));
-let orders = JSON.parse(localStorage.getItem('bs_orders')||'[]');
-let adminLoggedIn = false;
+let books = [];
+let orders = [];
 let _qty = 1;
 
-function save(){
-  localStorage.setItem('bs_books', JSON.stringify(books));
-  localStorage.setItem('bs_orders', JSON.stringify(orders));
+// =====================
+// 初始化資料（第一次自動塞資料）
+// =====================
+async function initBooks() {
+  const snap = await getDocs(collection(db, "books"));
+
+  if (snap.empty) {
+    for (let b of BOOKS_DATA) {
+      await setDoc(doc(db, "books", b.id), b);
+    }
+  }
 }
 
-function showPage(p,btn){
-  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
-  document.getElementById('page-'+p).classList.add('active');
-  btn.classList.add('active');
-  if(p==='admin'&&adminLoggedIn) renderAdmin();
-}
+// =====================
+// 即時同步 books
+// =====================
+onSnapshot(collection(db, "books"), (snap) => {
+  books = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderBooks();
+});
 
+// =====================
+// 即時同步 orders
+// =====================
+onSnapshot(collection(db, "orders"), (snap) => {
+  orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderAdmin();
+});
+
+// =====================
+// UI：書籍列表
+// =====================
 function renderBooks(){
-  const q=document.getElementById('search-input').value.trim().toLowerCase();
-  const filtered=books.filter(b=>!q||b.title.toLowerCase().includes(q));
-  const grid=document.getElementById('books-grid');
-  grid.innerHTML=filtered.map(b=>{
-    const sc=b.stock>2?'stock-ok':b.stock>0?'stock-low':'stock-out';
-    const st=b.stock>0?`剩 ${b.stock} 本`:'已售完';
-    const pr=b.price>0?`NT$ ${b.price}`:'現場定價';
-    return `<div class="book-card ${b.stock===0?'sold-out':''}" onclick="${b.stock>0?`openModal(${b.id})`:''}">
-      <div class="book-title">${b.title}</div>
-      <div class="book-price">${pr}</div>
-      <span class="stock-badge ${sc}">${st}</span>
-    </div>`;
-  }).join('')||'<div style="text-align:center;padding:48px;color:#aaa">找不到書籍</div>';
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  const filtered = books.filter(b => !q || b.title.toLowerCase().includes(q));
+
+  document.getElementById('books-grid').innerHTML =
+    filtered.map(b => {
+      const sc = b.stock > 2 ? 'stock-ok' : b.stock > 0 ? 'stock-low' : 'stock-out';
+      const st = b.stock > 0 ? `剩 ${b.stock} 本` : '已售完';
+      const pr = b.price > 0 ? `NT$ ${b.price}` : '現場定價';
+
+      return `
+        <div class="book-card ${b.stock===0?'sold-out':''}"
+          onclick="${b.stock>0?`openModal('${b.id}')`:''}">
+          <div class="book-title">${b.title}</div>
+          <div class="book-price">${pr}</div>
+          <span class="stock-badge ${sc}">${st}</span>
+        </div>
+      `;
+    }).join('');
 }
 
-function openModal(id){
-  const b=books.find(x=>x.id===id); _qty=1;
-  const render=()=>{
-    const iv=document.getElementById('modal-initial')?.value||'';
-    const sc=b.stock>2?'stock-ok':b.stock>0?'stock-low':'stock-out';
-    const pr=b.price>0?`NT$ ${b.price} / 本`:'現場定價';
-    const tot=b.price>0?`<span style="font-size:13px;color:#888">合計：NT$ ${b.price*_qty}</span>`:'';
-    document.getElementById('modal-area').innerHTML=`
+// =====================
+// modal
+// =====================
+window.openModal = function(id){
+  const b = books.find(x => x.id === id);
+  _qty = 1;
+
+  const render = () => {
+    const iv = document.getElementById('modal-initial')?.value || '';
+    const sc = b.stock > 2 ? 'stock-ok' : b.stock > 0 ? 'stock-low' : 'stock-out';
+    const pr = b.price > 0 ? `NT$ ${b.price}` : '現場定價';
+
+    document.getElementById('modal-area').innerHTML = `
       <div class="modal-overlay" onclick="closeModal(event)">
         <div class="modal" onclick="event.stopPropagation()">
           <div class="modal-title">${b.title}</div>
           <div class="modal-price">${pr}</div>
-          <div class="modal-stock">庫存：<span class="stock-badge ${sc}">${b.stock} 本</span></div>
-          <div class="input-label">您的 Initial（例如 JC、MT）</div>
-          <input class="modal-input" id="modal-initial" placeholder="請輸入英文縮寫" maxlength="8" style="text-transform:uppercase" value="${iv}">
-          <div class="input-label">數量</div>
-          <div class="qty-row">
-            <button class="qty-btn" onclick="adj(-1,${id})">−</button>
-            <span class="qty-val">${_qty}</span>
-            <button class="qty-btn" onclick="adj(1,${id})">+</button>
-            ${tot}
+
+          <div class="modal-stock">
+            庫存：<span class="stock-badge ${sc}">${b.stock}</span>
           </div>
+
+          <input class="modal-input" id="modal-initial"
+            placeholder="Initial" value="${iv}">
+
+          <div class="qty-row">
+            <button class="qty-btn" onclick="adj(-1,'${id}')">−</button>
+            <span class="qty-val">${_qty}</span>
+            <button class="qty-btn" onclick="adj(1,'${id}')">+</button>
+          </div>
+
           <div class="btn-row">
             <button class="btn-cancel" onclick="closeModal()">取消</button>
-            <button class="btn-primary" onclick="submitOrder(${id})">確認登記</button>
+            <button class="btn-primary" onclick="submitOrder('${id}')">確認</button>
           </div>
         </div>
-      </div>`;
+      </div>
+    `;
   };
-  window._r=render; render();
-}
 
-window.adj=function(d,id){
-  const b=books.find(x=>x.id===id);
-  _qty=Math.max(1,Math.min(b.stock,_qty+d));
-  window._r&&window._r();
+  window._r = render;
+  render();
 };
 
-function closeModal(e){
-  if(!e||e.target.classList.contains('modal-overlay'))
-    document.getElementById('modal-area').innerHTML='';
-}
+window.adj = function(d,id){
+  const b = books.find(x => x.id === id);
+  _qty = Math.max(1, Math.min(b.stock, _qty + d));
+  window._r();
+};
 
-function submitOrder(id){
-  const initial=(document.getElementById('modal-initial')?.value||'').trim().toUpperCase();
-  if(!initial){showToast('請輸入 Initial！',true);return;}
-  const b=books.find(x=>x.id===id);
-  if(b.stock<_qty){showToast('庫存不足',true);return;}
-  b.stock-=_qty;
-  orders.push({id:Date.now(),time:new Date().toLocaleString('zh-TW'),initial,bookId:id,bookTitle:b.title,qty:_qty,amount:b.price*_qty,paid:false});
-  save(); document.getElementById('modal-area').innerHTML=''; renderBooks();
-  showToast(`✓ ${initial} 已登記「${b.title}」x${_qty}`);
-}
+window.closeModal = function(e){
+  if(!e || e.target.classList.contains('modal-overlay')){
+    document.getElementById('modal-area').innerHTML = '';
+  }
+};
 
-function adminLogin(){
-  if(document.getElementById('admin-pw').value===ADMIN_PASSWORD){
-    adminLoggedIn=true;
-    document.getElementById('admin-login-area').style.display='none';
-    document.getElementById('admin-content').style.display='block';
-    renderAdmin();
-  } else showToast('密碼錯誤',true);
-}
+// =====================
+// 下單（🔥 Firebase 寫入）
+// =====================
+window.submitOrder = async function(id){
+  const initial = (document.getElementById('modal-initial').value || '').toUpperCase();
+  if(!initial) return alert("輸入 Initial");
 
-function adminLogout(){
-  adminLoggedIn=false;
-  document.getElementById('admin-login-area').style.display='block';
-  document.getElementById('admin-content').style.display='none';
-}
+  const b = books.find(x => x.id === id);
+  if(b.stock < _qty) return alert("庫存不足");
 
-function renderAdmin(){
-  const q=(document.getElementById('admin-search')?.value||'').trim().toLowerCase();
-  const f=q?orders.filter(o=>o.initial.toLowerCase().includes(q)||o.bookTitle.toLowerCase().includes(q)):[...orders];
-  const tq=f.reduce((s,o)=>s+o.qty,0);
-  const ta=f.reduce((s,o)=>s+o.amount,0);
-  const pc=f.filter(o=>o.paid).length;
-  const up=[...new Set(f.map(o=>o.initial))].length;
-  document.getElementById('stats-row').innerHTML=`
-    <div class="stat-card"><div class="stat-label">訂單筆數</div><div class="stat-val">${f.length}</div></div>
-    <div class="stat-card"><div class="stat-label">購書冊數</div><div class="stat-val">${tq}</div></div>
-    <div class="stat-card"><div class="stat-label">登記人數</div><div class="stat-val">${up}</div></div>
-    <div class="stat-card"><div class="stat-label">已付款</div><div class="stat-val">${pc}/${f.length}</div></div>`;
-  const sorted=[...f].sort((a,b)=>b.id-a.id);
-  document.getElementById('orders-tbody').innerHTML=sorted.length
-    ?sorted.map(o=>`<tr>
-        <td style="font-size:12px;color:#888;white-space:nowrap">${o.time}</td>
-        <td><strong>${o.initial}</strong></td>
+  // 更新庫存
+  await updateDoc(doc(db,"books",id), {
+    stock: b.stock - _qty
+  });
+
+  // 新增訂單
+  await addDoc(collection(db,"orders"), {
+    initial,
+    bookTitle: b.title,
+    qty: _qty,
+    amount: b.price * _qty,
+    time: new Date().toLocaleString(),
+    paid: false
+  });
+
+  document.getElementById('modal-area').innerHTML = '';
+};
+
+// =====================
+// admin
+// =====================
+window.togglePaid = async function(id){
+  const o = orders.find(x => x.id === id);
+  await updateDoc(doc(db,"orders",id), {
+    paid: !o.paid
+  });
+};
+
+window.delOrder = async function(id){
+  await deleteDoc(doc(db,"orders",id));
+};
+
+window.renderAdmin = function(){
+  const q = (document.getElementById('admin-search')?.value || '').toLowerCase();
+  const f = q
+    ? orders.filter(o => o.initial.toLowerCase().includes(q) || o.bookTitle.toLowerCase().includes(q))
+    : orders;
+
+  document.getElementById('orders-tbody').innerHTML =
+    f.map(o => `
+      <tr>
+        <td>${o.time}</td>
+        <td>${o.initial}</td>
         <td>${o.bookTitle}</td>
         <td>${o.qty}</td>
-        <td>${o.amount>0?'NT$ '+o.amount:'現場'}</td>
-        <td><button class="${o.paid?'paid-badge':'unpaid-badge'}" onclick="togglePaid(${o.id})">${o.paid?'✓ 已付款':'待付款'}</button></td>
-        <td><button class="delete-btn" onclick="delOrder(${o.id})">刪除</button></td>
-      </tr>`).join('')
-    :`<tr><td colspan="7" style="text-align:center;padding:32px;color:#aaa">尚無訂單</td></tr>`;
-}
+        <td>${o.amount}</td>
+        <td>
+          <button onclick="togglePaid('${o.id}')">
+            ${o.paid ? "已付款" : "未付款"}
+          </button>
+        </td>
+        <td>
+          <button onclick="delOrder('${o.id}')">刪除</button>
+        </td>
+      </tr>
+    `).join('');
+};
 
-function togglePaid(id){
-  const o=orders.find(x=>x.id===id);
-  if(o){o.paid=!o.paid;save();renderAdmin();}
-}
+// =====================
+// 啟動
+// =====================
+initBooks();
 
-function delOrder(id){
-  const o=orders.find(x=>x.id===id);
-  if(!o||!confirm(`確定刪除 ${o.initial} 的訂單？`))return;
-  const b=books.find(x=>x.id===o.bookId);
-  if(b)b.stock+=o.qty;
-  orders=orders.filter(x=>x.id!==id);
-  save();renderAdmin();renderBooks();
-}
-
-function exportCSV(){
-  const h=['時間','同仁','書名','數量','金額','狀態'];
-  const r=orders.map(o=>[`"${o.time}"`,o.initial,`"${o.bookTitle}"`,o.qty,o.amount>0?o.amount:'現場',o.paid?'已付款':'待付款']);
-  const csv=[h,...r].map(x=>x.join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download='義賣訂單.csv'; a.click();
-}
-
-function showToast(msg,err){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.style.background=err?'#A32D2D':'#1D9E75'; t.style.display='block';
-  setTimeout(()=>t.style.display='none',2800);
-}
-
-renderBooks();
+window.renderBooks = renderBooks;
 </script>
 </body>
 </html>
