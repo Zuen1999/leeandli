@@ -129,7 +129,7 @@ const ADMIN_PASSWORD = "sale2025";
 let books = JSON.parse(localStorage.getItem('bs_books')||'null') || JSON.parse(JSON.stringify(BOOKS_DATA));
 let orders = JSON.parse(localStorage.getItem('bs_orders')||'[]');
 let adminLoggedIn = false;
-let _qty = 1;
+let _qty = id;
 
 function save(){
   localStorage.setItem('bs_books', JSON.stringify(books));
@@ -194,7 +194,7 @@ function openModal(id){
 
 window.adj=function(d,id){
   const b=books.find(x=>x.id===id);
-  _qty=Math.max(id,Math.min(b.stock,_qty+d));
+  _qty=Math.max(1,Math.min(b.stock,_qty+d));
   window._r&&window._r();
 };
 
