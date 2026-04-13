@@ -148,19 +148,7 @@ const BOOKS_DATA = [
   {id:"5", title:"書名五", price:0, stock:3},
   {id:"6", title:"書名六", price:0, stock:3},
 ];
-// 後台密碼（可自行修改）
-const ADMIN_PASSWORD = "sale2025";
-// =============================================
 
-let books = JSON.parse(localStorage.getItem('bs_books')||'null') || JSON.parse(JSON.stringify(BOOKS_DATA));
-let orders = JSON.parse(localStorage.getItem('bs_orders')||'[]');
-let adminLoggedIn = false;
-let _qty = 1;
-
-function save(){
-  localStorage.setItem('bs_books', JSON.stringify(books));
-  localStorage.setItem('bs_orders', JSON.stringify(orders));
-}
 
 let books = [];
 let orders = [];
