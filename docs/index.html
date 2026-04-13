@@ -129,7 +129,7 @@ const ADMIN_PASSWORD = "sale2025";
 let books = JSON.parse(localStorage.getItem('bs_books')||'null') || JSON.parse(JSON.stringify(BOOKS_DATA));
 let orders = JSON.parse(localStorage.getItem('bs_orders')||'[]');
 let adminLoggedIn = false;
-let _qty = id;
+let _qty = 1;
 
 function save(){
   localStorage.setItem('bs_books', JSON.stringify(books));
