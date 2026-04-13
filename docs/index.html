@@ -292,43 +292,72 @@ window.submitOrder = async function(id){
 };
 
 // =====================
-// admin
+// 🔥 Admin（Firebase 正確版）
 // =====================
-window.togglePaid = async function(id){
-  const o = orders.find(x => x.id === id);
-  await updateDoc(doc(db,"orders",id), {
-    paid: !o.paid
+
+window.renderAdmin = function () {
+  const q = (document.getElementById('admin-search')?.value || '').toLowerCase();
+
+  const f = q
+    ? orders.filter(o =>
+        (o.initial || '').toLowerCase().includes(q) ||
+        (o.bookTitle || '').toLowerCase().includes(q)
+      )
+    : orders;
+
+  const tbody = document.getElementById('orders-tbody');
+
+  if (!tbody) return;
+
+  tbody.innerHTML = f.length
+    ? f.map(o => `
+      <tr>
+        <td>${o.time || ''}</td>
+        <td><strong>${o.initial || ''}</strong></td>
+        <td>${o.bookTitle || ''}</td>
+        <td>${o.qty || 0}</td>
+        <td>${o.amount ? 'NT$ ' + o.amount : '-'}</td>
+
+        <td>
+          <button class="${o.paid ? 'paid-badge' : 'unpaid-badge'}"
+            onclick="togglePaid('${o.id}', ${o.paid})">
+            ${o.paid ? '✓ 已付款' : '待付款'}
+          </button>
+        </td>
+
+        <td>
+          <button class="delete-btn"
+            onclick="delOrder('${o.id}')">
+            刪除
+          </button>
+        </td>
+      </tr>
+    `).join('')
+    : `<tr><td colspan="7" style="text-align:center;padding:20px;color:#999">
+        尚無訂單
+      </td></tr>`;
+};
+
+
+// =====================
+// 🔥 切換付款狀態
+// =====================
+window.togglePaid = async function (id, currentPaid) {
+  const ref = doc(db, "orders", id);
+
+  await updateDoc(ref, {
+    paid: !currentPaid
   });
 };
 
-window.delOrder = async function(id){
-  await deleteDoc(doc(db,"orders",id));
-};
 
-window.renderAdmin = function(){
-  const q = (document.getElementById('admin-search')?.value || '').toLowerCase();
-  const f = q
-    ? orders.filter(o => o.initial.toLowerCase().includes(q) || o.bookTitle.toLowerCase().includes(q))
-    : orders;
+// =====================
+// 🔥 刪除訂單
+// =====================
+window.delOrder = async function (id) {
+  if (!confirm("確定刪除這筆訂單？")) return;
 
-  document.getElementById('orders-tbody').innerHTML =
-    f.map(o => `
-      <tr>
-        <td>${o.time}</td>
-        <td>${o.initial}</td>
-        <td>${o.bookTitle}</td>
-        <td>${o.qty}</td>
-        <td>${o.amount}</td>
-        <td>
-          <button onclick="togglePaid('${o.id}')">
-            ${o.paid ? "已付款" : "未付款"}
-          </button>
-        </td>
-        <td>
-          <button onclick="delOrder('${o.id}')">刪除</button>
-        </td>
-      </tr>
-    `).join('');
+  await deleteDoc(doc(db, "orders", id));
 };
 
 // =====================
