@@ -1,137 +1,3 @@
-bash
-
-cat > /mnt/user-data/outputs/book-sale.html << 'HTMLEOF'
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>書本義賣 2026</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:16px}
-.header{background:#fff;border-bottom:1px solid #e5e5e5;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.logo{font-size:18px;font-weight:600}
-.logo span{color:#1D9E75}
-.nav-btns{display:flex;gap:8px}
-.nav-btn{font-size:13px;padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:transparent;cursor:pointer;color:#333}
-.nav-btn.active{background:#e6f7f1;color:#0F6E56;border-color:transparent;font-weight:500}
-.page{display:none;padding:20px;max-width:1100px;margin:0 auto}
-.page.active{display:block}
-.search-bar{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:10px 16px;width:100%;font-size:14px;color:#1a1a1a;margin-bottom:16px}
-.search-bar:focus{outline:none;border-color:#1D9E75}
-.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.filter-chip{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #e5e5e5;background:#fff;cursor:pointer;color:#666}
-.filter-chip.active{background:#e6f7f1;color:#0F6E56;border-color:transparent;font-weight:500}
-.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.book-card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:14px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s}
-.book-card:hover{border-color:#1D9E75;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
-.book-card.sold-out{opacity:0.55;cursor:default}
-.book-title{font-size:14px;font-weight:600;margin-bottom:4px;line-height:1.4}
-.book-author{font-size:12px;color:#888;margin-bottom:8px}
-.book-price{font-size:16px;font-weight:600;color:#1D9E75;margin-bottom:8px}
-.book-meta{display:flex;justify-content:space-between;align-items:center}
-.stock-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
-.stock-ok{background:#EAF3DE;color:#3B6D11}
-.stock-low{background:#FAEEDA;color:#854F0B}
-.stock-out{background:#FCEBEB;color:#A32D2D}
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
-.modal{background:#fff;border-radius:16px;padding:24px;width:360px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
-.modal-title{font-size:17px;font-weight:600;margin-bottom:4px}
-.modal-author{font-size:13px;color:#888;margin-bottom:12px}
-.modal-price{font-size:22px;font-weight:700;color:#1D9E75;margin-bottom:14px}
-.modal-stock{font-size:13px;color:#666;margin-bottom:14px}
-.input-label{font-size:12px;color:#888;margin-bottom:4px}
-.modal-input{width:100%;border:1px solid #e5e5e5;border-radius:8px;padding:9px 12px;font-size:14px;color:#1a1a1a;margin-bottom:14px;background:#fafafa}
-.modal-input:focus{outline:none;border-color:#1D9E75;background:#fff}
-.qty-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.qty-btn{width:32px;height:32px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer;font-size:18px;color:#333;display:flex;align-items:center;justify-content:center;font-weight:500}
-.qty-btn:hover{background:#f5f5f0}
-.qty-val{font-size:18px;font-weight:600;min-width:28px;text-align:center}
-.btn-row{display:flex;gap:8px}
-.btn-primary{flex:1;padding:10px;border:none;border-radius:8px;background:#1D9E75;color:#fff;font-size:14px;cursor:pointer;font-weight:600}
-.btn-primary:hover{background:#0F6E56}
-.btn-primary:disabled{background:#e5e5e5;color:#aaa;cursor:not-allowed}
-.btn-cancel{padding:10px 18px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;color:#666}
-.btn-cancel:hover{background:#f5f5f0}
-.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-@media(max-width:600px){.stats-row{grid-template-columns:repeat(2,1fr)}}
-.stat-card{background:#f5f5f0;border-radius:10px;padding:14px}
-.stat-label{font-size:12px;color:#888;margin-bottom:4px}
-.stat-val{font-size:24px;font-weight:700;color:#1a1a1a}
-.table-wrap{overflow-x:auto}
-.orders-table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
-.orders-table th{text-align:left;padding:9px 10px;border-bottom:1px solid #e5e5e5;color:#888;font-weight:500;background:#fafafa}
-.orders-table td{padding:9px 10px;border-bottom:1px solid #f0f0f0}
-.orders-table tr:hover td{background:#fafaf8}
-.admin-login{max-width:320px;margin:60px auto;background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:28px}
-.admin-login h2{font-size:17px;font-weight:600;margin-bottom:18px}
-.action-badge{font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;border:none;font-weight:500}
-.paid-badge{background:#EAF3DE;color:#3B6D11}
-.unpaid-badge{background:#FAEEDA;color:#854F0B}
-.delete-btn{background:#FCEBEB;color:#A32D2D;font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;border:none;font-weight:500}
-.section-title{font-size:17px;font-weight:600}
-.export-btn,.admin-search-input{font-size:13px;padding:7px 14px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer;color:#333}
-.admin-search-input{cursor:text;width:200px}
-.admin-search-input:focus{outline:none;border-color:#1D9E75}
-.no-results{text-align:center;padding:48px;color:#aaa;font-size:14px}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;z-index:999;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.15);font-weight:500}
-</style>
-</head>
-<body>
-
-<div class="header">
-  <div class="logo">📚 <span>書本義賣</span> 2025</div>
-  <div class="nav-btns">
-    <button class="nav-btn active" id="btn-shop" onclick="showPage('shop')">選購書籍</button>
-    <button class="nav-btn" id="btn-admin" onclick="showPage('admin')">後台管理</button>
-  </div>
-</div>
-
-<div class="page active" id="page-shop">
-  <input class="search-bar" type="text" placeholder="🔍 搜尋書名或作者..." oninput="renderBooks()" id="search-input">
-  <div class="books-grid" id="books-grid"></div>
-</div>
-
-<div class="page" id="page-admin">
-  <div id="admin-login-area">
-    <div class="admin-login">
-      <h2>🔐 後台管理員登入</h2>
-      <div class="input-label">密碼</div>
-      <input class="modal-input" type="password" id="admin-pw" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')adminLogin()">
-      <button class="btn-primary" onclick="adminLogin()" style="width:100%;margin-top:4px">登入</button>
-    </div>
-  </div>
-  <div id="admin-content" style="display:none">
-    <div class="admin-header">
-      <div class="section-title">訂單總覽</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input class="admin-search-input" type="text" placeholder="搜尋 Initial 或書名..." oninput="renderAdmin()" id="admin-search">
-        <button class="export-btn" onclick="exportCSV()">📥 匯出 CSV</button>
-        <button class="nav-btn" onclick="adminLogout()">登出</button>
-      </div>
-    </div>
-    <div class="stats-row" id="stats-row"></div>
-    <div class="table-wrap">
-      <table class="orders-table" id="orders-table">
-        <thead><tr>
-          <th>時間</th><th>同仁</th><th>書名</th><th>作者</th><th>數量</th><th>金額</th><th>狀態</th><th>操作</th>
-        </tr></thead>
-        <tbody id="orders-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<div id="modal-area"></div>
-<div class="toast" id="toast"></div>
-
-<script>
-const BOOKS_DATA = [
-  {id:1,title:"bash
-
-cat > /mnt/user-data/outputs/book-sale.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -140,89 +6,73 @@ cat > /mnt/user-data/outputs/book-sale.html << 'HTMLEOF'
 <title>書本義賣 2025</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:16px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f0;color:#1a1a1a}
 .header{background:#fff;border-bottom:1px solid #e5e5e5;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.logo{font-size:18px;font-weight:600}
-.logo span{color:#1D9E75}
+.logo{font-size:18px;font-weight:600}.logo span{color:#1D9E75}
 .nav-btns{display:flex;gap:8px}
 .nav-btn{font-size:13px;padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:transparent;cursor:pointer;color:#333}
 .nav-btn.active{background:#e6f7f1;color:#0F6E56;border-color:transparent;font-weight:500}
 .page{display:none;padding:20px;max-width:1100px;margin:0 auto}
 .page.active{display:block}
-.search-bar{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:10px 16px;width:100%;font-size:14px;color:#1a1a1a;margin-bottom:16px}
+.search-bar{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:10px 16px;width:100%;font-size:14px;margin-bottom:16px}
 .search-bar:focus{outline:none;border-color:#1D9E75}
-.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.filter-chip{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #e5e5e5;background:#fff;cursor:pointer;color:#666}
-.filter-chip.active{background:#e6f7f1;color:#0F6E56;border-color:transparent;font-weight:500}
 .books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.book-card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:14px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s}
+.book-card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:14px;cursor:pointer;transition:border-color 0.15s}
 .book-card:hover{border-color:#1D9E75;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
-.book-card.sold-out{opacity:0.55;cursor:default}
-.book-title{font-size:14px;font-weight:600;margin-bottom:4px;line-height:1.4}
-.book-author{font-size:12px;color:#888;margin-bottom:8px}
-.book-price{font-size:16px;font-weight:600;color:#1D9E75;margin-bottom:8px}
-.book-meta{display:flex;justify-content:space-between;align-items:center}
-.stock-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.book-card.sold-out{opacity:0.5;cursor:default}
+.book-title{font-size:14px;font-weight:600;margin-bottom:8px;line-height:1.45}
+.book-price{font-size:15px;font-weight:600;color:#1D9E75;margin-bottom:8px}
+.stock-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;display:inline-block}
 .stock-ok{background:#EAF3DE;color:#3B6D11}
 .stock-low{background:#FAEEDA;color:#854F0B}
 .stock-out{background:#FCEBEB;color:#A32D2D}
-
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
-.modal{background:#fff;border-radius:16px;padding:24px;width:360px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
-.modal-title{font-size:17px;font-weight:600;margin-bottom:4px}
-.modal-author{font-size:13px;color:#888;margin-bottom:12px}
-.modal-price{font-size:22px;font-weight:700;color:#1D9E75;margin-bottom:14px}
+.modal{background:#fff;border-radius:16px;padding:24px;width:360px;max-width:92vw}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:8px;line-height:1.4}
+.modal-price{font-size:22px;font-weight:700;color:#1D9E75;margin-bottom:10px}
 .modal-stock{font-size:13px;color:#666;margin-bottom:14px}
 .input-label{font-size:12px;color:#888;margin-bottom:4px}
-.modal-input{width:100%;border:1px solid #e5e5e5;border-radius:8px;padding:9px 12px;font-size:14px;color:#1a1a1a;margin-bottom:14px;background:#fafafa}
-.modal-input:focus{outline:none;border-color:#1D9E75;background:#fff}
+.modal-input{width:100%;border:1px solid #e5e5e5;border-radius:8px;padding:9px 12px;font-size:14px;margin-bottom:14px;background:#fafafa}
+.modal-input:focus{outline:none;border-color:#1D9E75}
 .qty-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.qty-btn{width:32px;height:32px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer;font-size:18px;color:#333;display:flex;align-items:center;justify-content:center;font-weight:500}
-.qty-btn:hover{background:#f5f5f0}
+.qty-btn{width:32px;height:32px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
 .qty-val{font-size:18px;font-weight:600;min-width:28px;text-align:center}
 .btn-row{display:flex;gap:8px}
 .btn-primary{flex:1;padding:10px;border:none;border-radius:8px;background:#1D9E75;color:#fff;font-size:14px;cursor:pointer;font-weight:600}
 .btn-primary:hover{background:#0F6E56}
-.btn-primary:disabled{background:#e5e5e5;color:#aaa;cursor:not-allowed}
 .btn-cancel{padding:10px 18px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;color:#666}
-.btn-cancel:hover{background:#f5f5f0}
-.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 @media(max-width:600px){.stats-row{grid-template-columns:repeat(2,1fr)}}
 .stat-card{background:#f5f5f0;border-radius:10px;padding:14px}
 .stat-label{font-size:12px;color:#888;margin-bottom:4px}
-.stat-val{font-size:24px;font-weight:700;color:#1a1a1a}
+.stat-val{font-size:24px;font-weight:700}
+.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
 .table-wrap{overflow-x:auto}
-.orders-table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+.orders-table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
 .orders-table th{text-align:left;padding:9px 10px;border-bottom:1px solid #e5e5e5;color:#888;font-weight:500;background:#fafafa}
 .orders-table td{padding:9px 10px;border-bottom:1px solid #f0f0f0}
-.orders-table tr:hover td{background:#fafaf8}
 .admin-login{max-width:320px;margin:60px auto;background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:28px}
 .admin-login h2{font-size:17px;font-weight:600;margin-bottom:18px}
-.action-badge{font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;border:none;font-weight:500}
-.paid-badge{background:#EAF3DE;color:#3B6D11}
-.unpaid-badge{background:#FAEEDA;color:#854F0B}
+.paid-badge{background:#EAF3DE;color:#3B6D11;font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;border:none;font-weight:500}
+.unpaid-badge{background:#FAEEDA;color:#854F0B;font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;border:none;font-weight:500}
 .delete-btn{background:#FCEBEB;color:#A32D2D;font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;border:none;font-weight:500}
-.section-title{font-size:17px;font-weight:600}
-.export-btn,.admin-search-input{font-size:13px;padding:7px 14px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer;color:#333}
-.admin-search-input{cursor:text;width:200px}
+.export-btn{font-size:13px;padding:7px 14px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer}
+.admin-search-input{font-size:13px;padding:7px 14px;border:1px solid #e5e5e5;border-radius:8px;width:200px}
 .admin-search-input:focus{outline:none;border-color:#1D9E75}
-.no-results{text-align:center;padding:48px;color:#aaa;font-size:14px}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;z-index:999;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.15);font-weight:500}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;z-index:999;display:none;font-weight:500}
 </style>
 </head>
 <body>
-
 <div class="header">
   <div class="logo">📚 <span>書本義賣</span> 2025</div>
   <div class="nav-btns">
-    <button class="nav-btn active" id="btn-shop" onclick="showPage('shop')">選購書籍</button>
-    <button class="nav-btn" id="btn-admin" onclick="showPage('admin')">後台管理</button>
+    <button class="nav-btn active" onclick="showPage('shop',this)">選購書籍</button>
+    <button class="nav-btn" onclick="showPage('admin',this)">後台管理</button>
   </div>
 </div>
 
 <div class="page active" id="page-shop">
-  <input class="search-bar" type="text" placeholder="🔍 搜尋書名或作者..." oninput="renderBooks()" id="search-input">
+  <input class="search-bar" type="text" placeholder="🔍 搜尋書名..." oninput="renderBooks()" id="search-input">
   <div class="books-grid" id="books-grid"></div>
 </div>
 
@@ -230,15 +80,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   <div id="admin-login-area">
     <div class="admin-login">
       <h2>🔐 後台管理員登入</h2>
-      <div class="input-label">密碼</div>
-      <input class="modal-input" type="password" id="admin-pw" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')adminLogin()">
-      <button class="btn-primary" onclick="adminLogin()" style="width:100%;margin-top:4px">登入</button>
+      <div class="input-label" style="margin-bottom:6px">密碼</div>
+      <input class="modal-input" type="password" id="admin-pw" onkeydown="if(event.key==='Enter')adminLogin()">
+      <button class="btn-primary" onclick="adminLogin()" style="width:100%">登入</button>
     </div>
   </div>
   <div id="admin-content" style="display:none">
     <div class="admin-header">
-      <div class="section-title">訂單總覽</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div style="font-size:17px;font-weight:600">訂單總覽</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <input class="admin-search-input" type="text" placeholder="搜尋 Initial 或書名..." oninput="renderAdmin()" id="admin-search">
         <button class="export-btn" onclick="exportCSV()">📥 匯出 CSV</button>
         <button class="nav-btn" onclick="adminLogout()">登出</button>
@@ -246,10 +96,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     </div>
     <div class="stats-row" id="stats-row"></div>
     <div class="table-wrap">
-      <table class="orders-table" id="orders-table">
-        <thead><tr>
-          <th>時間</th><th>同仁</th><th>書名</th><th>作者</th><th>數量</th><th>金額</th><th>狀態</th><th>操作</th>
-        </tr></thead>
+      <table class="orders-table">
+        <thead><tr><th>時間</th><th>同仁</th><th>書名</th><th>數量</th><th>金額</th><th>狀態</th><th>操作</th></tr></thead>
         <tbody id="orders-tbody"></tbody>
       </table>
     </div>
@@ -260,53 +108,182 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 <div class="toast" id="toast"></div>
 
 <script>
+// =============================================
+// 📚 書單 — 在這裡新增/修改書籍
+// price: 定價（0 = 顯示「現場定價」）
+// stock: 庫存數量
+// =============================================
 const BOOKS_DATA = [
-  {id:1,title:"逆境翻身：用心理韌性打造贏家心態",author:"陳泰廷",price:100,stock:3},
-  {id:2,title:"陪家人拆「詐」彈：為什麼再多提醒，還是防不住詐騙劇本？",author:"陳安迪",price:100,stock:3},
-  {id:3,title:"從囤積屋開始的重生：無家者與囤積戶，彼此修復的故事",author:"羅靖茹",price:100,stock:3},
-  {id:4,title:"你可以不完美，但一定要完整：一位律師父親寫給女兒，也寫給渴望擺脫迷惘的你",author:"杜韓念",price:100,stock:3},
-  {id:5,title:"是這些失去救了我",author:"姜泰宇",price:100,stock:3},
-  {id:6,title:"你不知道的特教現場：從真實面說起，實現真正的融合教育",author:"楊元安",price:100,stock:3},
-  {id:7,title:"每一次出勤，都是生死瞬間：消防員",author:"宋明哲",price:100,stock:3},
-  {id:8,title:"酒與妹仔的日常",author:"林國峰",price:100,stock:3},
-  {id:9,title:"面對老，我有備而來",author:"簡靜惠",price:100,stock:3},
-  {id:10,title:"明明想溝通，卻又想翻桌：完美解決衝突的七項修煉",author:"皮耶．佩利西",price:100,stock:1},
-  {id:11,title:"社交腹肌：鍛鍊伸縮自如、不掉電的閒聊力",author:"森優子",price:100,stock:1},
-  {id:12,title:"阿姨們",author:"羅毓嘉",price:100,stock:1},
-  {id:13,title:"第二十一屆林榮三文學獎得獎作品集 ",author:"孫梓評、謝麗笙",price:100,stock:1},
-  {id:14,title:"林榮三與台灣",author:"鄧蔚偉",price:100,stock:1},
-  {id:15,title:"在心碎的地方，遇見平安",author:"張蓮娣",price:100,stock:1},
-  {id:16,title:"法治東西談",author:"李念祖",price:100,stock:3},
-  {id:17,title:"無肉之歡",author:"張慰慈",price:100,stock:1},
-  {id:18,title:"我碎裂的父親",author:"納旦尼爾．拉亨梅爾",price:100,stock:1},
-  {id:19,title:"莊子在車上：當念哲學的攝影師開起計程車",author:"郭定原",price:100,stock:1},
-  {id:20,title:"男人的祕密只跟心理師說：一名性諮商師與那些男人不言的欲望迷霧",author:"布蘭蒂．恩格勒&大衛．蘭森",price:100,stock:1},
-  {id:21,title:"親密關係Ⅰ: 別將伴侶當成應該滿足你需求的人",author:"克里斯多福‧孟",price:100,stock:1},
-  {id:22,title:"親密關係Ⅱ 實作篇",author:"克里斯多福‧孟",price:100,stock:2},
-  {id:23,title:"生命的最後一刻，都活得像自己：安寧照護的真義",author:"謝宛婷",price:100,stock:2},
-  {id:24,title:"如何停止不開心",author:"安德莉亞．歐文",price:100,stock:1},
-  {id:25,title:"志願單親：不需誰來完整我，矽谷科技人的單身生養實踐",author:"Cindy",price:100,stock:2},
-  {id:26,title:"北山時雨：我的京都前妻懷孕了",author:"王琦玉 ",price:100,stock:1},
-  {id:27,title:"海洋在哭：一位教授的潛水淨海行動",author:"陳徵蔚",price:100,stock:2},
-  {id:28,title:"看得見的高效思考：一流工作者教你把思考轉換成圖像，讓每次表達都直擊人心",author:"劉奕酉",price:100,stock:1},
-  {id:29,title:"無名人",author:"愛莉絲‧歐思華",price:100,stock:2},
-  {id:30,title:"街頭的流離者：一名街頭社工與無家者的交會微光",author:"楊小豌",price:100,stock:2},
-  {id:31,title:"ASD與ADHD共病的教養祕訣",author:"王意中",price:100,stock:2},
-  {id:32,title:"傷獸之島：我當野生動物獸醫師的日子",author:"綦孟柔",price:100,stock:1},
-  {id:33,title:"與山近的，離海亦不遠",author:"羅毓嘉",price:100,stock:1},
-  {id:34,title:"父能量：放下父愛的缺憾，也放過自己",author:"馮以量",price:100,stock:1},
-  {id:35,title:"你這麼努力，為什麼還是覺得自己不夠好？",author:"蔡宜芳",price:100,stock:1},
-  {id:36,title:"如何在黑暗房間找一隻黑貓：放下恐懼、焦慮、偏見與自戀，找回幸福快樂",author:"雅各．布拉克",price:100,stock:1},
-  {id:37,title:"關係黑洞：「不安全感」如何宰制我們的人生，如何突圍？",author:"周慕姿",price:100,stock:1},
-  {id:38,title:"有罪推定",author:"黃致豪",price:100,stock:1},
-  {id:39,title:"珊瑚，是海洋的森林",author:"台達電子文教基金會",price:100,stock:1},
-  {id:40,title:"浪漫巡山員：從海拔0到3000公尺，熱血堅毅的台灣山林守護者",author:"阿步（浪漫巡山員）",price:100,stock:1},
-  {id:41,title:"親密關係中的隱蔽人格：遠離「操縱、暴力、虐待、自戀」的魅惑與傷害",author:"于悅",price:100,stock:1},
-  {id:42,title:"道拉吉里的風",author:"雪羊",price:100,stock:1},
-  {id:43,title:"此刻，就是立遺囑的最好時刻：最溫暖的律師事務所主持人×最有愛的財富傳承手諭",author:"蘇家宏, 游婉琪",price:100,stock:1},
-  {id:44,title:"針尖上我們扮演",author:"楊凱丞",price:100,stock:1},
-  {id:45,title:"森森",author:"張詩勤",price:100,stock:1},
-  {id:46,title:"嘎啦",author:"姜泰宇",price:100,stock:1},
-  {id:47,title:"髒東西",author:"陳栢青",price:100,stock:1},
-  {id:48,title:"親師衝突：如何溝通？達成親師生三贏",author:"蘇明進",price:100,stock:1},
- 
+  {id:1,  title:"逆境翻身：用心理韌性打造贏家心態", price:0, stock:1},
+  {id:2,  title:"書名二", price:0, stock:1},
+  {id:3,  title:"書名三", price:0, stock:1},
+  {id:4,  title:"書名四", price:0, stock:1},
+  {id:5,  title:"書名五", price:0, stock:1},
+];
+
+// 後台密碼（可自行修改）
+const ADMIN_PASSWORD = "sale2025";
+// =============================================
+
+let books = JSON.parse(localStorage.getItem('bs_books')||'null') || JSON.parse(JSON.stringify(BOOKS_DATA));
+let orders = JSON.parse(localStorage.getItem('bs_orders')||'[]');
+let adminLoggedIn = false;
+let _qty = 1;
+
+function save(){
+  localStorage.setItem('bs_books', JSON.stringify(books));
+  localStorage.setItem('bs_orders', JSON.stringify(orders));
+}
+
+function showPage(p,btn){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  btn.classList.add('active');
+  if(p==='admin'&&adminLoggedIn) renderAdmin();
+}
+
+function renderBooks(){
+  const q=document.getElementById('search-input').value.trim().toLowerCase();
+  const filtered=books.filter(b=>!q||b.title.toLowerCase().includes(q));
+  const grid=document.getElementById('books-grid');
+  grid.innerHTML=filtered.map(b=>{
+    const sc=b.stock>2?'stock-ok':b.stock>0?'stock-low':'stock-out';
+    const st=b.stock>0?`剩 ${b.stock} 本`:'已售完';
+    const pr=b.price>0?`NT$ ${b.price}`:'現場定價';
+    return `<div class="book-card ${b.stock===0?'sold-out':''}" onclick="${b.stock>0?`openModal(${b.id})`:''}">
+      <div class="book-title">${b.title}</div>
+      <div class="book-price">${pr}</div>
+      <span class="stock-badge ${sc}">${st}</span>
+    </div>`;
+  }).join('')||'<div style="text-align:center;padding:48px;color:#aaa">找不到書籍</div>';
+}
+
+function openModal(id){
+  const b=books.find(x=>x.id===id); _qty=1;
+  const render=()=>{
+    const iv=document.getElementById('modal-initial')?.value||'';
+    const sc=b.stock>2?'stock-ok':b.stock>0?'stock-low':'stock-out';
+    const pr=b.price>0?`NT$ ${b.price} / 本`:'現場定價';
+    const tot=b.price>0?`<span style="font-size:13px;color:#888">合計：NT$ ${b.price*_qty}</span>`:'';
+    document.getElementById('modal-area').innerHTML=`
+      <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+          <div class="modal-title">${b.title}</div>
+          <div class="modal-price">${pr}</div>
+          <div class="modal-stock">庫存：<span class="stock-badge ${sc}">${b.stock} 本</span></div>
+          <div class="input-label">您的 Initial（例如 JC、MT）</div>
+          <input class="modal-input" id="modal-initial" placeholder="請輸入英文縮寫" maxlength="8" style="text-transform:uppercase" value="${iv}">
+          <div class="input-label">數量</div>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="adj(-1,${id})">−</button>
+            <span class="qty-val">${_qty}</span>
+            <button class="qty-btn" onclick="adj(1,${id})">+</button>
+            ${tot}
+          </div>
+          <div class="btn-row">
+            <button class="btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn-primary" onclick="submitOrder(${id})">確認登記</button>
+          </div>
+        </div>
+      </div>`;
+  };
+  window._r=render; render();
+}
+
+window.adj=function(d,id){
+  const b=books.find(x=>x.id===id);
+  _qty=Math.max(1,Math.min(b.stock,_qty+d));
+  window._r&&window._r();
+};
+
+function closeModal(e){
+  if(!e||e.target.classList.contains('modal-overlay'))
+    document.getElementById('modal-area').innerHTML='';
+}
+
+function submitOrder(id){
+  const initial=(document.getElementById('modal-initial')?.value||'').trim().toUpperCase();
+  if(!initial){showToast('請輸入 Initial！',true);return;}
+  const b=books.find(x=>x.id===id);
+  if(b.stock<_qty){showToast('庫存不足',true);return;}
+  b.stock-=_qty;
+  orders.push({id:Date.now(),time:new Date().toLocaleString('zh-TW'),initial,bookId:id,bookTitle:b.title,qty:_qty,amount:b.price*_qty,paid:false});
+  save(); document.getElementById('modal-area').innerHTML=''; renderBooks();
+  showToast(`✓ ${initial} 已登記「${b.title}」x${_qty}`);
+}
+
+function adminLogin(){
+  if(document.getElementById('admin-pw').value===ADMIN_PASSWORD){
+    adminLoggedIn=true;
+    document.getElementById('admin-login-area').style.display='none';
+    document.getElementById('admin-content').style.display='block';
+    renderAdmin();
+  } else showToast('密碼錯誤',true);
+}
+
+function adminLogout(){
+  adminLoggedIn=false;
+  document.getElementById('admin-login-area').style.display='block';
+  document.getElementById('admin-content').style.display='none';
+}
+
+function renderAdmin(){
+  const q=(document.getElementById('admin-search')?.value||'').trim().toLowerCase();
+  const f=q?orders.filter(o=>o.initial.toLowerCase().includes(q)||o.bookTitle.toLowerCase().includes(q)):[...orders];
+  const tq=f.reduce((s,o)=>s+o.qty,0);
+  const ta=f.reduce((s,o)=>s+o.amount,0);
+  const pc=f.filter(o=>o.paid).length;
+  const up=[...new Set(f.map(o=>o.initial))].length;
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card"><div class="stat-label">訂單筆數</div><div class="stat-val">${f.length}</div></div>
+    <div class="stat-card"><div class="stat-label">購書冊數</div><div class="stat-val">${tq}</div></div>
+    <div class="stat-card"><div class="stat-label">登記人數</div><div class="stat-val">${up}</div></div>
+    <div class="stat-card"><div class="stat-label">已付款</div><div class="stat-val">${pc}/${f.length}</div></div>`;
+  const sorted=[...f].sort((a,b)=>b.id-a.id);
+  document.getElementById('orders-tbody').innerHTML=sorted.length
+    ?sorted.map(o=>`<tr>
+        <td style="font-size:12px;color:#888;white-space:nowrap">${o.time}</td>
+        <td><strong>${o.initial}</strong></td>
+        <td>${o.bookTitle}</td>
+        <td>${o.qty}</td>
+        <td>${o.amount>0?'NT$ '+o.amount:'現場'}</td>
+        <td><button class="${o.paid?'paid-badge':'unpaid-badge'}" onclick="togglePaid(${o.id})">${o.paid?'✓ 已付款':'待付款'}</button></td>
+        <td><button class="delete-btn" onclick="delOrder(${o.id})">刪除</button></td>
+      </tr>`).join('')
+    :`<tr><td colspan="7" style="text-align:center;padding:32px;color:#aaa">尚無訂單</td></tr>`;
+}
+
+function togglePaid(id){
+  const o=orders.find(x=>x.id===id);
+  if(o){o.paid=!o.paid;save();renderAdmin();}
+}
+
+function delOrder(id){
+  const o=orders.find(x=>x.id===id);
+  if(!o||!confirm(`確定刪除 ${o.initial} 的訂單？`))return;
+  const b=books.find(x=>x.id===o.bookId);
+  if(b)b.stock+=o.qty;
+  orders=orders.filter(x=>x.id!==id);
+  save();renderAdmin();renderBooks();
+}
+
+function exportCSV(){
+  const h=['時間','同仁','書名','數量','金額','狀態'];
+  const r=orders.map(o=>[`"${o.time}"`,o.initial,`"${o.bookTitle}"`,o.qty,o.amount>0?o.amount:'現場',o.paid?'已付款':'待付款']);
+  const csv=[h,...r].map(x=>x.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='義賣訂單.csv'; a.click();
+}
+
+function showToast(msg,err){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=err?'#A32D2D':'#1D9E75'; t.style.display='block';
+  setTimeout(()=>t.style.display='none',2800);
+}
+
+renderBooks();
+</script>
+</body>
+</html>
