@@ -194,7 +194,7 @@ function openModal(id){
 
 window.adj=function(d,id){
   const b=books.find(x=>x.id===id);
-  _qty=Math.max(1,Math.min(b.stock,_qty+d));
+  _qty=Math.max(id,Math.min(b.stock,_qty+d));
   window._r&&window._r();
 };
 
