@@ -1,68 +1,274 @@
-// =====================
-// 🔥 Admin（Firebase 正確版）
-// =====================
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>書本義賣 2026</title>
 
-window.renderAdmin = function () {
-  const q = (document.getElementById('admin-search')?.value || '').toLowerCase();
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f0;color:#1a1a1a}
 
-  const f = q
-    ? orders.filter(o =>
-        (o.initial || '').toLowerCase().includes(q) ||
-        (o.bookTitle || '').toLowerCase().includes(q)
-      )
-    : orders;
+.header{background:#fff;border-bottom:1px solid #e5e5e5;padding:14px 20px;display:flex;justify-content:space-between;position:sticky;top:0;z-index:50}
+.logo{font-size:18px;font-weight:600}.logo span{color:#1D9E75}
 
-  const tbody = document.getElementById('orders-tbody');
+.nav-btn{padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer}
 
-  if (!tbody) return;
+.page{display:none;padding:20px;max-width:1100px;margin:auto}
+.page.active{display:block}
 
-  tbody.innerHTML = f.length
-    ? f.map(o => `
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+
+.book-card{background:#fff;padding:14px;border-radius:12px;border:1px solid #ddd;cursor:pointer}
+.book-title{font-weight:600}
+.book-price{color:#1D9E75;margin-top:6px}
+
+.stock-badge{font-size:12px;padding:2px 8px;border-radius:10px}
+.stock-ok{background:#eaf3de}
+.stock-low{background:#faeeda}
+.stock-out{background:#fcebea}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;padding:20px;border-radius:12px;width:320px}
+
+.btn-primary{background:#1D9E75;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+.btn-cancel{border:1px solid #ddd;background:#fff;padding:8px 12px;border-radius:8px}
+
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px;border-bottom:1px solid #eee;font-size:13px}
+
+.admin-login{max-width:300px;margin:80px auto;background:#fff;padding:20px;border-radius:12px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 20px;border-radius:10px;display:none}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div>📚 <span style="color:#1D9E75">書本義賣</span> 2026</div>
+  <div>
+    <button class="nav-btn" onclick="showPage('shop')">選購</button>
+    <button class="nav-btn" onclick="showPage('admin')">後台</button>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div class="page active" id="shop">
+  <div id="books"></div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="admin">
+
+  <div id="loginBox" class="admin-login">
+    <h3>後台登入</h3>
+    <input id="pw" type="password" placeholder="密碼" style="width:100%;margin:10px 0;padding:8px">
+    <button class="btn-primary" onclick="login()">登入</button>
+  </div>
+
+  <div id="adminPanel" style="display:none">
+    <h3>訂單管理</h3>
+    <button class="nav-btn" onclick="logout()">登出</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>時間</th>
+          <th>人員</th>
+          <th>書名</th>
+          <th>數量</th>
+          <th>金額</th>
+          <th>狀態</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="orders"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="modal"></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDegjtEiG9Sp76gAf-FsXFGie5cP3q9HPg",
+  authDomain: "book-sale-78900.firebaseapp.com",
+  projectId: "book-sale-78900",
+  storageBucket: "book-sale-78900.firebasestorage.app",
+  messagingSenderId: "488413671265",
+  appId: "1:488413671265:web:2f9994cfc50e98266f9f20",
+  measurementId: "G-42DYQZ2QH8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let books = [];
+let orders = [];
+let qty = 1;
+let currentBook = null;
+
+let admin = false;
+
+/* 初始化書籍 */
+const defaultBooks = [
+  {id:"1", title:"逆境翻身", price:0, stock:3},
+  {id:"2", title:"書名二", price:0, stock:3},
+  {id:"3", title:"書名三", price:0, stock:3},
+];
+
+async function initBooks(){
+  for(let b of defaultBooks){
+    await setDoc(doc(db,"books",b.id), b, {merge:true});
+  }
+}
+
+/* 即時同步 */
+onSnapshot(collection(db,"books"), snap=>{
+  books = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderBooks();
+});
+
+onSnapshot(collection(db,"orders"), snap=>{
+  orders = snap.docs.map(d=>({id:d.id,...d.data()}));
+  if(admin) renderAdmin();
+});
+
+/* SHOP */
+function renderBooks(){
+  const el = document.getElementById('books');
+
+  el.innerHTML = books.map(b=>`
+    <div class="book-card" onclick="openModal('${b.id}')">
+      <div class="book-title">${b.title}</div>
+      <div class="book-price">${b.price?b.price:"現場定價"}</div>
+      <div class="stock-badge">${b.stock}</div>
+    </div>
+  `).join('');
+}
+
+/* MODAL */
+window.openModal = function(id){
+  currentBook = books.find(b=>b.id===id);
+  qty = 1;
+
+  document.getElementById('modal').innerHTML = `
+  <div class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal">
+      <h3>${currentBook.title}</h3>
+
+      <input id="initial" placeholder="Initial">
+
+      <div>
+        <button onclick="qty=Math.max(1,qty-1);openModal('${id}')">-</button>
+        ${qty}
+        <button onclick="qty++;openModal('${id}')">+</button>
+      </div>
+
+      <button class="btn-primary" onclick="submitOrder()">確認</button>
+      <button class="btn-cancel" onclick="closeModal()">關閉</button>
+    </div>
+  </div>`;
+}
+
+window.closeModal = ()=>document.getElementById('modal').innerHTML='';
+
+/* 下單 */
+window.submitOrder = async function(){
+  const initial = document.getElementById('initial').value;
+  if(!initial) return alert("輸入 Initial");
+
+  if(currentBook.stock < qty) return alert("庫存不足");
+
+  await updateDoc(doc(db,"books",currentBook.id),{
+    stock: currentBook.stock - qty
+  });
+
+  await addDoc(collection(db,"orders"),{
+    initial,
+    bookTitle: currentBook.title,
+    qty,
+    amount: currentBook.price*qty,
+    time: new Date().toLocaleString(),
+    paid:false
+  });
+
+  closeModal();
+}
+
+/* ADMIN LOGIN */
+window.login = function(){
+  const pw = document.getElementById('pw').value;
+  if(pw==="sale2025"){
+    admin = true;
+    document.getElementById('loginBox').style.display='none';
+    document.getElementById('adminPanel').style.display='block';
+    renderAdmin();
+  } else alert("錯誤");
+}
+
+window.logout = function(){
+  admin = false;
+  document.getElementById('loginBox').style.display='block';
+  document.getElementById('adminPanel').style.display='none';
+}
+
+/* ADMIN */
+function renderAdmin(){
+  document.getElementById('orders').innerHTML =
+    orders.map(o=>`
       <tr>
-        <td>${o.time || ''}</td>
-        <td><strong>${o.initial || ''}</strong></td>
-        <td>${o.bookTitle || ''}</td>
-        <td>${o.qty || 0}</td>
-        <td>${o.amount ? 'NT$ ' + o.amount : '-'}</td>
-
+        <td>${o.time}</td>
+        <td>${o.initial}</td>
+        <td>${o.bookTitle}</td>
+        <td>${o.qty}</td>
+        <td>${o.amount}</td>
         <td>
-          <button class="${o.paid ? 'paid-badge' : 'unpaid-badge'}"
-            onclick="togglePaid('${o.id}', ${o.paid})">
-            ${o.paid ? '✓ 已付款' : '待付款'}
+          <button onclick="togglePaid('${o.id}',${o.paid})">
+            ${o.paid?"已付款":"未付款"}
           </button>
         </td>
-
         <td>
-          <button class="delete-btn"
-            onclick="delOrder('${o.id}')">
-            刪除
-          </button>
+          <button onclick="delOrder('${o.id}')">刪除</button>
         </td>
       </tr>
-    `).join('')
-    : `<tr><td colspan="7" style="text-align:center;padding:20px;color:#999">
-        尚無訂單
-      </td></tr>`;
-};
+    `).join('');
+}
 
-
-// =====================
-// 🔥 切換付款狀態
-// =====================
-window.togglePaid = async function (id, currentPaid) {
-  const ref = doc(db, "orders", id);
-
-  await updateDoc(ref, {
-    paid: !currentPaid
+window.togglePaid = async function(id,p){
+  await updateDoc(doc(db,"orders",id),{
+    paid:!p
   });
-};
+}
 
+window.delOrder = async function(id){
+  await deleteDoc(doc(db,"orders",id));
+}
 
-// =====================
-// 🔥 刪除訂單
-// =====================
-window.delOrder = async function (id) {
-  if (!confirm("確定刪除這筆訂單？")) return;
+/* init */
+initBooks();
 
-  await deleteDoc(doc(db, "orders", id));
-};
+window.showPage = (p)=>{
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  document.getElementById(p).classList.add('active');
+}
+
+</script>
+
+</body>
+</html>
